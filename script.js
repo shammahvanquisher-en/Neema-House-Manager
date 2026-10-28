@@ -1369,4 +1369,48 @@ if (todayElement) {
   });
 }
 
-showDashboard();
+const loginScreen = document.getElementById("loginScreen");
+const loginForm = document.getElementById("loginForm");
+const loginMessage = document.getElementById("loginMessage");
+
+// Keep the app hidden until Firebase confirms the sign-in status.
+const appContent = document.querySelector("body > #loginScreen")
+  ? document.querySelector("body > #loginScreen").nextElementSibling
+  : null;
+
+if (appContent) {
+  appContent.style.display = "none";
+}
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    if (loginScreen) loginScreen.style.display = "none";
+    if (appContent) appContent.style.display = "";
+    showDashboard();
+  } else {
+    if (loginScreen) loginScreen.style.display = "block";
+    if (appContent) appContent.style.display = "none";
+  }
+});
+
+if (loginForm) {
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+
+    if (loginMessage) loginMessage.textContent = "Signing in...";
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      if (loginMessage) loginMessage.textContent = "";
+    } catch (error) {
+      if (loginMessage) {
+        loginMessage.textContent =
+          "Sign-in failed. Check your email and password and try again.";
+      }
+      console.error("Firebase sign-in error:", error);
+    }
+  });
+}
