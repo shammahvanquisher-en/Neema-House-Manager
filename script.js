@@ -1473,28 +1473,15 @@ function showLoginScreen(message = "") {
 }
 
 function hideLoginScreen() {
-  function hideLoginScreen() {
-  const firebaseScreen =
-    document.getElementById("firebaseLoginScreen");
+  const firebaseScreen = document.getElementById("firebaseLoginScreen");
+  const originalScreen = document.getElementById("loginScreen");
+  const appContent = document.getElementById("appContent");
 
-  const originalScreen =
-    document.getElementById("loginScreen");
-
-  const appContent =
-    document.getElementById("appContent");
-
-  if (firebaseScreen) {
-    firebaseScreen.style.display = "none";
-  }
-
-  if (originalScreen) {
-    originalScreen.style.display = "none";
-  }
-
-  if (appContent) {
-    appContent.style.display = "block";
-  }
+  if (firebaseScreen) firebaseScreen.style.display = "none";
+  if (originalScreen) originalScreen.style.display = "none";
+  if (appContent) appContent.style.display = "block";
 }
+
 function applyCloudData(data) {
   applyingCloudData = true;
 
