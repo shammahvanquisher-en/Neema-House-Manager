@@ -1473,38 +1473,28 @@ function showLoginScreen(message = "") {
 }
 
 function hideLoginScreen() {
-  const screen = document.getElementById("firebaseLoginScreen");
-  if (screen) screen.style.display = "none";
-}
+  function hideLoginScreen() {
+  const firebaseScreen =
+    document.getElementById("firebaseLoginScreen");
 
-function readLocalCloudData() {
-  const data = {};
+  const originalScreen =
+    document.getElementById("loginScreen");
 
-  for (const key of CLOUD_KEYS) {
-    try {
-      data[key] = JSON.parse(localStorage.getItem(key) || "null");
-    } catch {
-      data[key] = null;
-    }
+  const appContent =
+    document.getElementById("appContent");
+
+  if (firebaseScreen) {
+    firebaseScreen.style.display = "none";
   }
 
-  return data;
+  if (originalScreen) {
+    originalScreen.style.display = "none";
+  }
+
+  if (appContent) {
+    appContent.style.display = "block";
+  }
 }
-
-function hasLocalRecords(data) {
-  return CLOUD_KEYS.some(key => {
-    const value = data[key];
-
-    if (Array.isArray(value)) return value.length > 0;
-
-    if (key === STORAGE.settings && value && typeof value === "object") {
-      return Object.keys(value).length > 0;
-    }
-
-    return false;
-  });
-}
-
 function applyCloudData(data) {
   applyingCloudData = true;
 
