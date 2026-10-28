@@ -1,14 +1,19 @@
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
 import {
   getFirestore,
   doc,
   getDoc,
   setDoc,
   onSnapshot
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
-
-import { 
-  getFirestore
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1602,29 +1607,16 @@ async function initializeCloudForUser(user) {
     }
 
     cloudReady = true;
-    hideLoginScreen();
+    
+    function hideLoginScreen() {
+  const firebaseScreen = document.getElementById("firebaseLoginScreen");
+  const originalScreen = document.getElementById("loginScreen");
+  const appContent = document.getElementById("appContent");
 
-    // Listen for changes made by the other signed-in device.
-    unsubscribeCloud = onSnapshot(
-      CLOUD_DOCUMENT,
-      snapshot => {
-        if (!snapshot.exists()) return;
-
-        const data = snapshot.data();
-
-        // Ignore the initial snapshot because getDoc above already loaded it.
-        if (!cloudReady) return;
-
-        applyCloudData(data);
-        openPage(
-          document.querySelector(".nav-link.active")?.dataset.page || "dashboard"
-        );
-      },
-      error => {
-        console.error("Cloud listener failed:", error);
-        alert("Live cloud sync stopped: " + error.message);
-      }
-    );
+  if (firebaseScreen) firebaseScreen.style.display = "none";
+  if (originalScreen) originalScreen.style.display = "none";
+  if (appContent) appContent.style.display = "block";
+}
 
     addSignOutButton();
     openPage("dashboard");
