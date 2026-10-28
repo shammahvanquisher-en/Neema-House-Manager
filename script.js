@@ -1,8 +1,10 @@
 
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+
 import {
   getAuth,
   signInAnonymously,
-  signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
@@ -16,7 +18,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBC5ZXNIN8LLzDIYltnVBNehlT7_fiXbsU",
+  apiKey: "YOUR_EXISTING_API_KEY",
   authDomain: "neema-house-manager.firebaseapp.com",
   projectId: "neema-house-manager",
   storageBucket: "neema-house-manager.firebasestorage.app",
@@ -28,9 +30,15 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
+
 const HOUSE_RENTS = {
-  R1: 7000, R2: 7000, R3: 7000, R4: 7000,
-  R5: 7000, R6: 5000, R7: 5000
+  R1: 7000,
+  R2: 7000,
+  R3: 7000,
+  R4: 7000,
+  R5: 7000,
+  R6: 5000,
+  R7: 5000
 };
 
 const STORAGE = {
@@ -1603,17 +1611,50 @@ async function initializeCloudForUser(user) {
       applyCloudData(snapshot.data());
     }
 
+  
     cloudReady = true;
-  onAuthStateChanged(auth, async user => {
+
+    // Listen for changes made on other devices.
+    unsubscribeCloud = onSnapshot(
+      CLOUD_DOCUMENT,
+      snapshot => {
+        if (!snapshot.exists()) return;
+
+        applyingCloudData = true;
+        try {
+          applyCloudData(snapshot.data());
+        } finally {
+          applyingCloudData = false;
+        }
+
+        // Refresh the visible page after cloud data changes.
+        if (typeof renderCurrentPage === "function") {
+          renderCurrentPage();
+        }
+      },
+      error => {
+        console.error("Cloud listener failed:", error);
+      }
+    );
+
+    hideLoginScreen();
+
+  } catch (error) {
+    console.error("Cloud initialization failed:", error);
+    alert("Could not load rental records. Check your internet connection and Firebase settings.");
+  }
+}
+
+// Authenticate automatically without displaying a login form.
+onAuthStateChanged(auth, async user => {
   if (!user) {
     try {
       await signInAnonymously(auth);
     } catch (error) {
       console.error("Automatic authentication failed:", error);
-      alert("Could not connect. Please check your internet connection.");
+      alert("Could not connect to cloud sync. Check your internet connection and Firebase settings.");
     }
     return;
   }
-
   await initializeCloudForUser(user);
 });
