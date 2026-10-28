@@ -1,19 +1,14 @@
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-
 import {
   getFirestore,
   doc,
   getDoc,
   setDoc,
   onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+import { 
+  getFirestore
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -29,17 +24,10 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
-
 const HOUSE_RENTS = {
-  R1: 7000,
-  R2: 7000,
-  R3: 7000,
-  R4: 7000,
-  R5: 7000,
-  R6: 5000,
-  R7: 5000
+  R1: 7000, R2: 7000, R3: 7000, R4: 7000,
+  R5: 7000, R6: 5000, R7: 5000
 };
-
 
 const STORAGE = {
   tenants: "neemaTenants",
@@ -1577,16 +1565,121 @@ Storage.prototype.setItem = function (key, value) {
 };
 
 async function initializeCloudForUser(user) {
- 
-if (!snapshot.exists()) {
-  const localData = readLocalCloudData();
+  currentUser = user;
+  cloudReady = false;
 
-  await setDoc(CLOUD_DOCUMENT, {
-    ...localData,
-    updatedAt: new Date().toISOString(),
-    updatedBy: user.uid
-  });
-} else {
-  applyCloudData(snapshot.data());
+  if (unsubscribeCloud) {
+    unsubscribeCloud();
+    unsubscribeCloud = null;
+  }
+
+  showLoginScreen("Loading your shared rental records…");
+
+  try {
+    const snapshot = await getDoc(CLOUD_DOCUMENT);
+
+    // First login to an empty cloud document:
+    // upload this device's records only if records exist locally.
+    if (!snapshot.exists()) {
+      const localData = readLocalCloudData();
+
+      if (hasLocalRecords(localData)) {
+        await setDoc(CLOUD_DOCUMENT, {
+          ...localData,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.uid
+        });
+      } else {
+        await setDoc(CLOUD_DOCUMENT, {
+          ...localData,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.uid
+        });
+      }
+    } else {
+      // Existing cloud records take priority over this browser's records.
+      applyCloudData(snapshot.data());
+    }
+
+    cloudReady = true;
+    hideLoginScreen();
+
+    // Listen for changes made by the other signed-in device.
+    unsubscribeCloud = onSnapshot(
+      CLOUD_DOCUMENT,
+      snapshot => {
+        if (!snapshot.exists()) return;
+
+        const data = snapshot.data();
+
+        // Ignore the initial snapshot because getDoc above already loaded it.
+        if (!cloudReady) return;
+
+        applyCloudData(data);
+        openPage(
+          document.querySelector(".nav-link.active")?.dataset.page || "dashboard"
+        );
+      },
+      error => {
+        console.error("Cloud listener failed:", error);
+        alert("Live cloud sync stopped: " + error.message);
+      }
+    );
+
+    addSignOutButton();
+    openPage("dashboard");
+  } catch (error) {
+    cloudReady = false;
+    showLoginScreen(
+      "Could not load cloud records: " + error.message +
+      "\nCheck your Firestore rules and internet connection."
+    );
+    console.error("Firebase initialization failed:", error);
+  }
 }
 
+function addSignOutButton() {
+  if (document.getElementById("firebaseSignOutButton")) return;
+
+  const button = document.createElement("button");
+  button.id = "firebaseSignOutButton";
+  button.type = "button";
+  button.textContent = "Sign Out";
+  button.style.cssText = `
+    position:fixed;right:16px;bottom:16px;z-index:1000;
+    background:#0f5132;color:white;border:0;border-radius:8px;
+    padding:10px 14px;cursor:pointer;font-weight:bold;
+  `;
+
+  button.addEventListener("click", async () => {
+    if (!confirm("Sign out of Neema House Manager?")) return;
+
+    try {
+      await signOut(auth);
+    } catch (error) {
+      alert("Could not sign out: " + error.message);
+    }
+  });
+
+  document.body.appendChild(button);
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    currentUser = null;
+    cloudReady = false;
+
+    clearTimeout(cloudWriteTimer);
+
+    if (unsubscribeCloud) {
+      unsubscribeCloud();
+      unsubscribeCloud = null;
+    }
+
+    document.getElementById("firebaseSignOutButton")?.remove();
+    showLoginScreen();
+    return;
+  }
+
+  await initializeCloudForUser(user);
+});
