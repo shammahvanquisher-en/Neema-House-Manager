@@ -1,12 +1,11 @@
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-
 import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 import {
   getFirestore
@@ -1369,48 +1368,318 @@ if (todayElement) {
   });
 }
 
-const loginScreen = document.getElementById("loginScreen");
-const loginForm = document.getElementById("loginForm");
-const loginMessage = document.getElementById("loginMessage");
+// ==========================================
+// FIREBASE AUTHENTICATION + CLOUD SYNC
+// ==========================================
 
-// Keep the app hidden until Firebase confirms the sign-in status.
-const appContent = document.querySelector("body > #loginScreen")
-  ? document.querySelector("body > #loginScreen").nextElementSibling
-  : null;
+const CLOUD_DOCUMENT = doc(db, "properties", "neema-house");
 
-if (appContent) {
-  appContent.style.display = "none";
+const CLOUD_KEYS = [
+  STORAGE.tenants,
+  STORAGE.archived,
+  STORAGE.payments,
+  STORAGE.charges,
+  STORAGE.settings
+];
+
+let cloudReady = false;
+let applyingCloudData = false;
+let cloudWriteTimer = null;
+let unsubscribeCloud = null;
+let currentUser = null;
+
+function showLoginScreen(message = "") {
+  let screen = document.getElementById("firebaseLoginScreen");
+
+  if (!screen) {
+    screen = document.createElement("div");
+    screen.id = "firebaseLoginScreen";
+
+    screen.style.cssText = `
+      position:fixed;inset:0;z-index:99999;
+      display:flex;align-items:center;justify-content:center;
+      padding:20px;background:#f3f7f4;font-family:Arial,sans-serif;
+    `;
+
+    screen.innerHTML = `
+      <form id="firebaseLoginForm" style="
+        width:100%;max-width:400px;background:white;padding:28px;
+        border-radius:16px;box-shadow:0 10px 35px #0001;
+        box-sizing:border-box;
+      ">
+        <h1 style="color:#0f5132;margin-top:0">NEEMA HOUSE</h1>
+        <p>Sign in to access your rental records and cloud sync.</p>
+
+        <label style="display:block;margin:18px 0 6px">Email address</label>
+        <input id="firebaseEmail" type="email" required autocomplete="username"
+          style="box-sizing:border-box;width:100%;padding:12px;border:1px solid #ccd5df;border-radius:8px">
+
+        <label style="display:block;margin:18px 0 6px">Password</label>
+        <input id="firebasePassword" type="password" required
+          autocomplete="current-password"
+          style="box-sizing:border-box;width:100%;padding:12px;border:1px solid #ccd5df;border-radius:8px">
+
+        <button type="submit" style="
+          width:100%;margin-top:22px;padding:13px;border:0;
+          border-radius:8px;background:#0f5132;color:white;
+          font-weight:bold;cursor:pointer;
+        ">Sign In</button>
+
+        <p id="firebaseLoginMessage" role="status"
+          style="color:#b42318;white-space:pre-wrap"></p>
+      </form>
+    `;
+
+    document.body.appendChild(screen);
+
+    document.getElementById("firebaseLoginForm")
+      .addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const email = document.getElementById("firebaseEmail").value.trim();
+        const password = document.getElementById("firebasePassword").value;
+        const status = document.getElementById("firebaseLoginMessage");
+        const button = event.currentTarget.querySelector("button");
+
+        status.style.color = "#52645a";
+        status.textContent = "Signing in…";
+        button.disabled = true;
+
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch (error) {
+          status.style.color = "#b42318";
+          status.textContent =
+            error.code === "auth/invalid-credential"
+              ? "Email or password is incorrect."
+              : error.code === "auth/too-many-requests"
+                ? "Too many attempts. Please wait and try again."
+                : "Sign-in failed: " + error.message;
+        } finally {
+          button.disabled = false;
+        }
+      });
+  }
+
+  screen.style.display = "flex";
+
+  const status = document.getElementById("firebaseLoginMessage");
+  if (status) status.textContent = message;
 }
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    if (loginScreen) loginScreen.style.display = "none";
-    if (appContent) appContent.style.display = "";
-    showDashboard();
-  } else {
-    if (loginScreen) loginScreen.style.display = "block";
-    if (appContent) appContent.style.display = "none";
-  }
-});
+function hideLoginScreen() {
+  const screen = document.getElementById("firebaseLoginScreen");
+  if (screen) screen.style.display = "none";
+}
 
-if (loginForm) {
-  loginForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+function readLocalCloudData() {
+  const data = {};
 
-    const email = document.getElementById("loginEmail").value.trim();
-    const password = document.getElementById("loginPassword").value;
-
-    if (loginMessage) loginMessage.textContent = "Signing in...";
-
+  for (const key of CLOUD_KEYS) {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      if (loginMessage) loginMessage.textContent = "";
-    } catch (error) {
-      if (loginMessage) {
-        loginMessage.textContent =
-          "Sign-in failed. Check your email and password and try again.";
-      }
-      console.error("Firebase sign-in error:", error);
+      data[key] = JSON.parse(localStorage.getItem(key) || "null");
+    } catch {
+      data[key] = null;
     }
+  }
+
+  return data;
+}
+
+function hasLocalRecords(data) {
+  return CLOUD_KEYS.some(key => {
+    const value = data[key];
+
+    if (Array.isArray(value)) return value.length > 0;
+
+    if (key === STORAGE.settings && value && typeof value === "object") {
+      return Object.keys(value).length > 0;
+    }
+
+    return false;
   });
 }
+
+function applyCloudData(data) {
+  applyingCloudData = true;
+
+  try {
+    for (const key of CLOUD_KEYS) {
+      const value = data?.[key];
+
+      if (value !== undefined && value !== null) {
+        localStorage.setItem(key, JSON.stringify(value));
+      } else {
+        localStorage.removeItem(key);
+      }
+    }
+  } finally {
+    applyingCloudData = false;
+  }
+}
+
+async function writeCloudData() {
+  if (!currentUser || !cloudReady || applyingCloudData) return;
+
+  const data = readLocalCloudData();
+
+  await setDoc(CLOUD_DOCUMENT, {
+    ...data,
+    updatedAt: new Date().toISOString(),
+    updatedBy: currentUser.uid
+  }, { merge: true });
+}
+
+function scheduleCloudWrite() {
+  if (!currentUser || !cloudReady || applyingCloudData) return;
+
+  clearTimeout(cloudWriteTimer);
+
+  cloudWriteTimer = setTimeout(async () => {
+    try {
+      await writeCloudData();
+    } catch (error) {
+      console.error("Cloud save failed:", error);
+      alert(
+        "Your changes may be saved only on this device. " +
+        "Cloud sync failed: " + error.message
+      );
+    }
+  }, 700);
+}
+
+// Sync localStorage writes made by the existing app to Firestore.
+// The existing tenant/payment functions can continue using localStorage.
+const originalLocalStorageSetItem = Storage.prototype.setItem;
+
+Storage.prototype.setItem = function (key, value) {
+  originalLocalStorageSetItem.call(this, key, value);
+
+  if (
+    this === window.localStorage &&
+    CLOUD_KEYS.includes(key) &&
+    !applyingCloudData
+  ) {
+    scheduleCloudWrite();
+  }
+};
+
+async function initializeCloudForUser(user) {
+  currentUser = user;
+  cloudReady = false;
+
+  if (unsubscribeCloud) {
+    unsubscribeCloud();
+    unsubscribeCloud = null;
+  }
+
+  showLoginScreen("Loading your shared rental records…");
+
+  try {
+    const snapshot = await getDoc(CLOUD_DOCUMENT);
+
+    // First login to an empty cloud document:
+    // upload this device's records only if records exist locally.
+    if (!snapshot.exists()) {
+      const localData = readLocalCloudData();
+
+      if (hasLocalRecords(localData)) {
+        await setDoc(CLOUD_DOCUMENT, {
+          ...localData,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.uid
+        });
+      } else {
+        await setDoc(CLOUD_DOCUMENT, {
+          ...localData,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.uid
+        });
+      }
+    } else {
+      // Existing cloud records take priority over this browser's records.
+      applyCloudData(snapshot.data());
+    }
+
+    cloudReady = true;
+    hideLoginScreen();
+
+    // Listen for changes made by the other signed-in device.
+    unsubscribeCloud = onSnapshot(
+      CLOUD_DOCUMENT,
+      snapshot => {
+        if (!snapshot.exists()) return;
+
+        const data = snapshot.data();
+
+        // Ignore the initial snapshot because getDoc above already loaded it.
+        if (!cloudReady) return;
+
+        applyCloudData(data);
+        openPage(
+          document.querySelector(".nav-link.active")?.dataset.page || "dashboard"
+        );
+      },
+      error => {
+        console.error("Cloud listener failed:", error);
+        alert("Live cloud sync stopped: " + error.message);
+      }
+    );
+
+    addSignOutButton();
+    openPage("dashboard");
+  } catch (error) {
+    cloudReady = false;
+    showLoginScreen(
+      "Could not load cloud records: " + error.message +
+      "\nCheck your Firestore rules and internet connection."
+    );
+    console.error("Firebase initialization failed:", error);
+  }
+}
+
+function addSignOutButton() {
+  if (document.getElementById("firebaseSignOutButton")) return;
+
+  const button = document.createElement("button");
+  button.id = "firebaseSignOutButton";
+  button.type = "button";
+  button.textContent = "Sign Out";
+  button.style.cssText = `
+    position:fixed;right:16px;bottom:16px;z-index:1000;
+    background:#0f5132;color:white;border:0;border-radius:8px;
+    padding:10px 14px;cursor:pointer;font-weight:bold;
+  `;
+
+  button.addEventListener("click", async () => {
+    if (!confirm("Sign out of Neema House Manager?")) return;
+
+    try {
+      await signOut(auth);
+    } catch (error) {
+      alert("Could not sign out: " + error.message);
+    }
+  });
+
+  document.body.appendChild(button);
+}
+
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    currentUser = null;
+    cloudReady = false;
+
+    clearTimeout(cloudWriteTimer);
+
+    if (unsubscribeCloud) {
+      unsubscribeCloud();
+      unsubscribeCloud = null;
+    }
+
+    document.getElementById("firebaseSignOutButton")?.remove();
+    showLoginScreen();
+    return;
+  }
+
+  await initializeCloudForUser(user);
+});
