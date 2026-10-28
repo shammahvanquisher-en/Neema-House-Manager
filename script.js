@@ -1,10 +1,7 @@
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-
 import {
   getAuth,
-  setPersistence,
-  inMemoryPersistence,
+  signInAnonymously,
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut
@@ -1580,8 +1577,6 @@ async function initializeCloudForUser(user) {
     unsubscribeCloud = null;
   }
 
-  showLoginScreen("Loading your shared rental records…");
-
   try {
     const snapshot = await getDoc(CLOUD_DOCUMENT);
 
@@ -1609,82 +1604,14 @@ async function initializeCloudForUser(user) {
     }
 
     cloudReady = true;
-    hideLoginScreen();
-
-    // Listen for changes made by the other signed-in device.
-    unsubscribeCloud = onSnapshot(
-      CLOUD_DOCUMENT,
-      snapshot => {
-        if (!snapshot.exists()) return;
-
-        const data = snapshot.data();
-
-        // Ignore the initial snapshot because getDoc above already loaded it.
-        if (!cloudReady) return;
-
-        applyCloudData(data);
-        openPage(
-          document.querySelector(".nav-link.active")?.dataset.page || "dashboard"
-        );
-      },
-      error => {
-        console.error("Cloud listener failed:", error);
-        alert("Live cloud sync stopped: " + error.message);
-      }
-    );
-
-    addSignOutButton();
-    openPage("dashboard");
-  } catch (error) {
-    cloudReady = false;
-    showLoginScreen(
-      "Could not load cloud records: " + error.message +
-      "\nCheck your Firestore rules and internet connection."
-    );
-    console.error("Firebase initialization failed:", error);
-  }
-}
-
-function addSignOutButton() {
-  if (document.getElementById("firebaseSignOutButton")) return;
-
-  const button = document.createElement("button");
-  button.id = "firebaseSignOutButton";
-  button.type = "button";
-  button.textContent = "Sign Out";
-  button.style.cssText = `
-    position:fixed;right:16px;bottom:16px;z-index:1000;
-    background:#0f5132;color:white;border:0;border-radius:8px;
-    padding:10px 14px;cursor:pointer;font-weight:bold;
-  `;
-
-  button.addEventListener("click", async () => {
-    if (!confirm("Sign out of Neema House Manager?")) return;
-
-    try {
-      await signOut(auth);
-    } catch (error) {
-      alert("Could not sign out: " + error.message);
-    }
-  });
-
-  document.body.appendChild(button);
-}
-
-onAuthStateChanged(auth, async user => {
+  onAuthStateChanged(auth, async user => {
   if (!user) {
-    currentUser = null;
-    cloudReady = false;
-
-    clearTimeout(cloudWriteTimer);
-
-    if (unsubscribeCloud) {
-      unsubscribeCloud();
-      unsubscribeCloud = null;
+    try {
+      await signInAnonymously(auth);
+    } catch (error) {
+      console.error("Automatic authentication failed:", error);
+      alert("Could not connect. Please check your internet connection.");
     }
-
-    document.getElementById("firebaseSignOutButton")?.remove();
-    showLoginScreen();
     return;
   }
 
