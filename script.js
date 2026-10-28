@@ -15,6 +15,7 @@ import {
   setDoc,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyBC5ZXNIN8LLzDIYltnVBNehlT7_fiXbsU",
   authDomain: "neema-house-manager.firebaseapp.com",
