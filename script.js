@@ -1,5 +1,4 @@
 
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 
 import {
@@ -15,15 +14,6 @@ import {
   getDoc,
   setDoc,
   onSnapshot
-
-import { 
-  getFirestore
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
-
-
-
-import { 
-  getFirestore
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -39,10 +29,17 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
+
 const HOUSE_RENTS = {
-  R1: 7000, R2: 7000, R3: 7000, R4: 7000,
-  R5: 7000, R6: 5000, R7: 5000
+  R1: 7000,
+  R2: 7000,
+  R3: 7000,
+  R4: 7000,
+  R5: 7000,
+  R6: 5000,
+  R7: 5000
 };
+
 
 const STORAGE = {
   tenants: "neemaTenants",
