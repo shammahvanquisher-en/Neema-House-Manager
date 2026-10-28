@@ -1546,6 +1546,7 @@ Storage.prototype.setItem = function (key, value) {
   }
 };
 
+
 async function initializeCloudForUser(user) {
   currentUser = user;
   cloudReady = false;
@@ -1560,30 +1561,53 @@ async function initializeCloudForUser(user) {
   try {
     const snapshot = await getDoc(CLOUD_DOCUMENT);
 
-    // First login to an empty cloud document:
-    // upload this device's records only if records exist locally.
     if (!snapshot.exists()) {
       const localData = readLocalCloudData();
 
-      if (hasLocalRecords(localData)) {
-        await setDoc(CLOUD_DOCUMENT, {
-          ...localData,
-          updatedAt: new Date().toISOString(),
-          updatedBy: user.uid
-        });
-      } else {
-        await setDoc(CLOUD_DOCUMENT, {
-          ...localData,
-          updatedAt: new Date().toISOString(),
-          updatedBy: user.uid
-        });
-      }
+      await setDoc(CLOUD_DOCUMENT, {
+        ...localData,
+        updatedAt: new Date().toISOString(),
+        updatedBy: user.uid
+      });
     } else {
-      // Existing cloud records take priority over this browser's records.
       applyCloudData(snapshot.data());
     }
 
     cloudReady = true;
+    hideLoginScreen();
+
+    unsubscribeCloud = onSnapshot(
+      CLOUD_DOCUMENT,
+      snapshot => {
+        if (!snapshot.exists() || !cloudReady) return;
+
+        applyCloudData(snapshot.data());
+
+        openPage(
+          document.querySelector(".nav-link.active")?.dataset.page
+            || "dashboard"
+        );
+      },
+      error => {
+        console.error("Cloud listener failed:", error);
+        alert("Live cloud sync stopped: " + error.message);
+      }
+    );
+
+    addSignOutButton();
+    openPage("dashboard");
+
+  } catch (error) {
+    cloudReady = false;
+
+    showLoginScreen(
+      "Could not load cloud records: " + error.message +
+      "\nCheck your Firestore rules and internet connection."
+    );
+
+    console.error("Firebase initialization failed:", error);
+  }
+}
     
     
 function hideLoginScreen() {
