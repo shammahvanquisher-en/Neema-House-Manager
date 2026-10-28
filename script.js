@@ -1,14 +1,4 @@
 
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-
-import {
-  getAuth,
-  signInAnonymously,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-
 import {
   getFirestore,
   doc,
@@ -17,8 +7,12 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
+import { 
+  getFirestore
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
 const firebaseConfig = {
-  apiKey: "YOUR_EXISTING_API_KEY",
+  apiKey: "AIzaSyBC5ZXNIN8LLzDIYltnVBNehlT7_fiXbsU",
   authDomain: "neema-house-manager.firebaseapp.com",
   projectId: "neema-house-manager",
   storageBucket: "neema-house-manager.firebasestorage.app",
@@ -30,15 +24,9 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
-
 const HOUSE_RENTS = {
-  R1: 7000,
-  R2: 7000,
-  R3: 7000,
-  R4: 7000,
-  R5: 7000,
-  R6: 5000,
-  R7: 5000
+  R1: 7000, R2: 7000, R3: 7000, R4: 7000,
+  R5: 7000, R6: 5000, R7: 5000
 };
 
 const STORAGE = {
@@ -1585,6 +1573,8 @@ async function initializeCloudForUser(user) {
     unsubscribeCloud = null;
   }
 
+  showLoginScreen("Loading your shared rental records…");
+
   try {
     const snapshot = await getDoc(CLOUD_DOCUMENT);
 
@@ -1611,50 +1601,85 @@ async function initializeCloudForUser(user) {
       applyCloudData(snapshot.data());
     }
 
-  
     cloudReady = true;
+    hideLoginScreen();
 
-    // Listen for changes made on other devices.
+    // Listen for changes made by the other signed-in device.
     unsubscribeCloud = onSnapshot(
       CLOUD_DOCUMENT,
       snapshot => {
         if (!snapshot.exists()) return;
 
-        applyingCloudData = true;
-        try {
-          applyCloudData(snapshot.data());
-        } finally {
-          applyingCloudData = false;
-        }
+        const data = snapshot.data();
 
-        // Refresh the visible page after cloud data changes.
-        if (typeof renderCurrentPage === "function") {
-          renderCurrentPage();
-        }
+        // Ignore the initial snapshot because getDoc above already loaded it.
+        if (!cloudReady) return;
+
+        applyCloudData(data);
+        openPage(
+          document.querySelector(".nav-link.active")?.dataset.page || "dashboard"
+        );
       },
       error => {
         console.error("Cloud listener failed:", error);
+        alert("Live cloud sync stopped: " + error.message);
       }
     );
 
-    hideLoginScreen();
-
+    addSignOutButton();
+    openPage("dashboard");
   } catch (error) {
-    console.error("Cloud initialization failed:", error);
-    alert("Could not load rental records. Check your internet connection and Firebase settings.");
+    cloudReady = false;
+    showLoginScreen(
+      "Could not load cloud records: " + error.message +
+      "\nCheck your Firestore rules and internet connection."
+    );
+    console.error("Firebase initialization failed:", error);
   }
 }
 
-// Authenticate automatically without displaying a login form.
+function addSignOutButton() {
+  if (document.getElementById("firebaseSignOutButton")) return;
+
+  const button = document.createElement("button");
+  button.id = "firebaseSignOutButton";
+  button.type = "button";
+  button.textContent = "Sign Out";
+  button.style.cssText = `
+    position:fixed;right:16px;bottom:16px;z-index:1000;
+    background:#0f5132;color:white;border:0;border-radius:8px;
+    padding:10px 14px;cursor:pointer;font-weight:bold;
+  `;
+
+  button.addEventListener("click", async () => {
+    if (!confirm("Sign out of Neema House Manager?")) return;
+
+    try {
+      await signOut(auth);
+    } catch (error) {
+      alert("Could not sign out: " + error.message);
+    }
+  });
+
+  document.body.appendChild(button);
+}
+
 onAuthStateChanged(auth, async user => {
   if (!user) {
-    try {
-      await signInAnonymously(auth);
-    } catch (error) {
-      console.error("Automatic authentication failed:", error);
-      alert("Could not connect to cloud sync. Check your internet connection and Firebase settings.");
+    currentUser = null;
+    cloudReady = false;
+
+    clearTimeout(cloudWriteTimer);
+
+    if (unsubscribeCloud) {
+      unsubscribeCloud();
+      unsubscribeCloud = null;
     }
+
+    document.getElementById("firebaseSignOutButton")?.remove();
+    showLoginScreen();
     return;
   }
+
   await initializeCloudForUser(user);
 });
