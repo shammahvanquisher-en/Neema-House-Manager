@@ -1598,7 +1598,8 @@ async function initializeCloudForUser(user) {
 
     cloudReady = true;
     
-    function hideLoginScreen() {
+    
+function hideLoginScreen() {
   const firebaseScreen = document.getElementById("firebaseLoginScreen");
   const originalScreen = document.getElementById("loginScreen");
   const appContent = document.getElementById("appContent");
@@ -1608,17 +1609,6 @@ async function initializeCloudForUser(user) {
   if (appContent) appContent.style.display = "block";
 }
 
-    addSignOutButton();
-    openPage("dashboard");
-  } catch (error) {
-    cloudReady = false;
-    showLoginScreen(
-      "Could not load cloud records: " + error.message +
-      "\nCheck your Firestore rules and internet connection."
-    );
-    console.error("Firebase initialization failed:", error);
-  }
-}
 
 function addSignOutButton() {
   if (document.getElementById("firebaseSignOutButton")) return;
