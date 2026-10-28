@@ -9,6 +9,26 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="loginScreen" style="display:none; max-width:400px; margin:60px auto; padding:24px; font-family:Arial,sans-serif;">
+  <h2>Neema House Manager</h2>
+  <p>Sign in to access the house management system.</p>
+
+  <form id="loginForm">
+    <label for="loginEmail">Email address</label>
+    <input id="loginEmail" type="email" required
+      style="display:block; width:100%; padding:12px; margin:8px 0 16px; box-sizing:border-box;">
+
+    <label for="loginPassword">Password</label>
+    <input id="loginPassword" type="password" required
+      style="display:block; width:100%; padding:12px; margin:8px 0 16px; box-sizing:border-box;">
+
+    <button type="submit" style="padding:12px 20px; cursor:pointer;">
+      Sign In
+    </button>
+
+    <p id="loginMessage" role="status"></p>
+  </form>
+</div>
   <div class="app">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
