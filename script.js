@@ -1,19 +1,14 @@
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-
 import {
   getFirestore,
   doc,
   getDoc,
   setDoc,
   onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+import { 
+  getFirestore
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1473,13 +1468,36 @@ function showLoginScreen(message = "") {
 }
 
 function hideLoginScreen() {
-  const firebaseScreen = document.getElementById("firebaseLoginScreen");
-  const originalScreen = document.getElementById("loginScreen");
-  const appContent = document.getElementById("appContent");
+  const screen = document.getElementById("firebaseLoginScreen");
+  if (screen) screen.style.display = "none";
+}
 
-  if (firebaseScreen) firebaseScreen.style.display = "none";
-  if (originalScreen) originalScreen.style.display = "none";
-  if (appContent) appContent.style.display = "block";
+function readLocalCloudData() {
+  const data = {};
+
+  for (const key of CLOUD_KEYS) {
+    try {
+      data[key] = JSON.parse(localStorage.getItem(key) || "null");
+    } catch {
+      data[key] = null;
+    }
+  }
+
+  return data;
+}
+
+function hasLocalRecords(data) {
+  return CLOUD_KEYS.some(key => {
+    const value = data[key];
+
+    if (Array.isArray(value)) return value.length > 0;
+
+    if (key === STORAGE.settings && value && typeof value === "object") {
+      return Object.keys(value).length > 0;
+    }
+
+    return false;
+  });
 }
 
 function applyCloudData(data) {
@@ -1560,31 +1578,46 @@ async function initializeCloudForUser(user) {
   try {
     const snapshot = await getDoc(CLOUD_DOCUMENT);
 
+    // First login to an empty cloud document:
+    // upload this device's records only if records exist locally.
     if (!snapshot.exists()) {
       const localData = readLocalCloudData();
 
-      await setDoc(CLOUD_DOCUMENT, {
-        ...localData,
-        updatedAt: new Date().toISOString(),
-        updatedBy: user.uid
-      });
+      if (hasLocalRecords(localData)) {
+        await setDoc(CLOUD_DOCUMENT, {
+          ...localData,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.uid
+        });
+      } else {
+        await setDoc(CLOUD_DOCUMENT, {
+          ...localData,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.uid
+        });
+      }
     } else {
+      // Existing cloud records take priority over this browser's records.
       applyCloudData(snapshot.data());
     }
 
     cloudReady = true;
     hideLoginScreen();
 
+    // Listen for changes made by the other signed-in device.
     unsubscribeCloud = onSnapshot(
       CLOUD_DOCUMENT,
       snapshot => {
-        if (!snapshot.exists() || !cloudReady) return;
+        if (!snapshot.exists()) return;
 
-        applyCloudData(snapshot.data());
+        const data = snapshot.data();
 
+        // Ignore the initial snapshot because getDoc above already loaded it.
+        if (!cloudReady) return;
+
+        applyCloudData(data);
         openPage(
-          document.querySelector(".nav-link.active")?.dataset.page
-            || "dashboard"
+          document.querySelector(".nav-link.active")?.dataset.page || "dashboard"
         );
       },
       error => {
@@ -1595,30 +1628,15 @@ async function initializeCloudForUser(user) {
 
     addSignOutButton();
     openPage("dashboard");
-
   } catch (error) {
     cloudReady = false;
-
     showLoginScreen(
       "Could not load cloud records: " + error.message +
       "\nCheck your Firestore rules and internet connection."
     );
-
     console.error("Firebase initialization failed:", error);
   }
 }
-    
-    
-function hideLoginScreen() {
-  const firebaseScreen = document.getElementById("firebaseLoginScreen");
-  const originalScreen = document.getElementById("loginScreen");
-  const appContent = document.getElementById("appContent");
-
-  if (firebaseScreen) firebaseScreen.style.display = "none";
-  if (originalScreen) originalScreen.style.display = "none";
-  if (appContent) appContent.style.display = "block";
-}
-
 
 function addSignOutButton() {
   if (document.getElementById("firebaseSignOutButton")) return;
