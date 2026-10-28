@@ -1,4 +1,30 @@
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+import {
+  getFirestore
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBC5ZXNIN8LLzDIYltnVBNehlT7_fiXbsU",
+  authDomain: "neema-house-manager.firebaseapp.com",
+  projectId: "neema-house-manager",
+  storageBucket: "neema-house-manager.firebasestorage.app",
+  messagingSenderId: "999392215760",
+  appId: "1:999392215760:web:08216e2c001da44b8254d5",
+  measurementId: "G-V5B2RM1BDP"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
 const HOUSE_RENTS = {
   R1: 7000, R2: 7000, R3: 7000, R4: 7000,
   R5: 7000, R6: 5000, R7: 5000
@@ -1344,32 +1370,3 @@ if (todayElement) {
 }
 
 showDashboard();
-
-function deletePayment(paymentId) {
-  const payments = getPayments();
-  const payment = payments.find(p => String(p.id) === String(paymentId));
-
-  if (!payment) {
-    alert("Payment not found.");
-    return;
-  }
-
-  const confirmed = confirm(
-    `Are you sure you want to delete receipt ${payment.receiptNo || payment.id} for KSh ${Number(payment.amount).toLocaleString()}?\n\nThis action cannot be undone.`
-  );
-
-  if (!confirmed) return;
-
-  const updatedPayments = payments.filter(
-    p => String(p.id) !== String(paymentId)
-  );
-
-  localStorage.setItem(STORAGE.payments, JSON.stringify(updatedPayments));
-
-  alert("Payment deleted successfully.");
-
-  // Refresh the current page to update the payment records.
-  if (typeof showPage === "function") {
-    showPage("payments");
-  }
-}
