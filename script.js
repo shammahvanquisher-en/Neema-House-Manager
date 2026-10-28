@@ -1546,7 +1546,6 @@ Storage.prototype.setItem = function (key, value) {
   }
 };
 
-
 async function initializeCloudForUser(user) {
   currentUser = user;
   cloudReady = false;
