@@ -1,451 +1,292 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neema House | Record Manager</title>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
 
-<style>
-:root {
-  --navy: #10243a;
-  --green: #087f5b;
-  --bg: #f3f6f8;
-  --border: #dfe6eb;
-  --text: #17212b;
-  --muted: #687785;
-}
-* { box-sizing: border-box; }
-body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
-button, input, select, textarea { font: inherit; }
-.app { display: flex; min-height: 100vh; }
-.sidebar { width: 245px; flex-shrink: 0; padding: 25px 17px; background: var(--navy); color: white; }
-.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 35px; }
-.logo { width: 50px; height: 50px; border-radius: 13px; display: grid; place-items: center; background: var(--green); font-size: 26px; font-weight: bold; }
-.brand h2 { margin: 0 0 5px; font-size: 16px; }
-.brand small { color: #c5d4df; font-size: 10px; letter-spacing: 1px; }
-.nav-label { color: #aebdca; font-size: 11px; margin: 20px 10px 10px; text-transform: uppercase; letter-spacing: 1px; }
-.nav-item { display: block; padding: 12px 13px; border-radius: 8px; color: #e2eaf0; margin: 5px 0; font-size: 14px; }
-.nav-item.active { background: var(--green); color: white; font-weight: bold; }
-.main { flex: 1; min-width: 0; padding: 30px; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 28px; }
-.topbar h1 { margin: 0 0 7px; font-size: 27px; color: var(--navy); }
-.topbar p { margin: 0; color: var(--muted); font-size: 14px; }
-.badge { border-radius: 20px; padding: 9px 13px; background: #e0f3eb; color: var(--green); font-size: 12px; font-weight: bold; }
-.columns { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr); gap: 22px; align-items: start; }
-.card { background: white; border: 1px solid var(--border); border-radius: 13px; padding: 24px; box-shadow: 0 5px 20px #10243a08; min-width: 0; }
-.card h2 { margin: 0 0 6px; font-size: 19px; color: var(--navy); }
-.card-intro { margin: 0 0 20px; color: var(--muted); font-size: 13px; line-height: 1.5; }
-.section-title { margin: 25px 0 12px; padding-bottom: 9px; border-bottom: 1px solid var(--border); color: var(--green); font-size: 12px; text-transform: uppercase; letter-spacing: .8px; font-weight: bold; }
-.section-title:first-of-type { margin-top: 20px; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 13px; }
-.field { min-width: 0; margin-bottom: 13px; }
-.field.full { grid-column: 1 / -1; }
-label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 6px; color: #354452; }
-input, select, textarea { width: 100%; padding: 11px 12px; border: 1px solid #ccd6de; border-radius: 7px; outline: none; background: white; color: var(--text); }
-input:focus, select:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px #087f5b18; }
-.help { color: var(--muted); font-size: 11px; margin-top: 5px; line-height: 1.4; }
-.actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 15px; }
-button { cursor: pointer; border: 0; border-radius: 8px; padding: 12px 15px; font-size: 13px; font-weight: bold; }
-.primary { background: var(--green); color: white; }
-.dark { background: var(--navy); color: white; }
-.light { background: #eaf0f4; color: var(--navy); }
-button:disabled { opacity: .6; cursor: wait; }
-.status { margin-top: 12px; font-size: 12px; color: var(--green); line-height: 1.5; }
-.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
-.summary-item { background: #f4f8f7; border: 1px solid #e1eee9; border-radius: 9px; padding: 14px; }
-.summary-item span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 8px; }
-.summary-item strong { display: block; color: var(--navy); font-size: 19px; overflow-wrap: anywhere; }
-.summary-item.balance strong { color: #b42318; }
-.receipt { background: white; border: 1px solid var(--border); border-top: 6px solid var(--green); padding: 27px; color: #17212b; }
-.receipt-header { text-align: center; border-bottom: 2px solid var(--navy); padding-bottom: 16px; }
-.receipt-logo { width: 54px; height: 54px; margin: 0 auto 10px; display: grid; place-items: center; border-radius: 14px; background: var(--green); color: white; font-size: 28px; font-weight: bold; }
-.receipt-header h2 { font-size: 25px; letter-spacing: 1px; margin: 0 0 7px; }
-.receipt-header p { font-size: 12px; margin: 5px 0; }
-.receipt-heading { color: var(--green); font-weight: bold; font-size: 15px; margin-top: 16px; }
-.receipt-section { margin-top: 18px; }
-.receipt-section h3 { font-size: 11px; letter-spacing: .6px; color: var(--navy); text-transform: uppercase; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-.receipt-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dotted #e0e6ea; font-size: 12px; }
-.receipt-row span:first-child { color: #53616e; }
-.receipt-row span:last-child { text-align: right; font-weight: 600; overflow-wrap: anywhere; }
-.receipt-row.total { margin-top: 5px; border-top: 2px solid var(--navy); border-bottom: 0; padding-top: 12px; font-weight: bold; font-size: 14px; }
-.receipt-row.total span { color: var(--navy); }
-.receipt-row.highlight span:last-child { color: var(--green); font-weight: bold; }
-.due { text-align: center; background: #edf7f3; padding: 12px 7px; margin-top: 22px; border-radius: 5px; font-size: 11px; font-weight: bold; }
-.signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 32px; font-size: 11px; }
-.signatures div { border-top: 1px solid #687785; padding-top: 8px; }
-.footer-note { color: var(--muted); font-size: 11px; line-height: 1.5; margin-top: 18px; }
-@media(max-width: 1050px) { .sidebar { width: 205px; } .main { padding: 20px; } .columns { grid-template-columns: 1fr; } }
-@media(max-width: 650px) { .sidebar { display: none; } .main { padding: 14px; } .topbar { align-items: flex-start; flex-direction: column; } .grid { grid-template-columns: 1fr; } .field.full { grid-column: auto; } .card { padding: 17px; } .receipt { padding: 19px; } }
-@media print {
-  body { background: white; }
-  .sidebar, .topbar, .form-card, .actions, .status, .summary, .card > .card-intro { display: none !important; }
-  .main { padding: 0; }
-  .columns { display: block; }
-  .receipt-card { border: 0; box-shadow: none; padding: 0; }
-  .receipt { border: 0; border-top: 4px solid var(--green); }
-}
-</style>
+  <title>Neema House Manager</title>
+
+  <meta
+    name="description"
+    content="Neema House rental management dashboard for tenants, payments, receipts and reports."
+  >
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* Basic layout safeguards; your style.css controls the main design. */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    #sidebar {
+      flex-shrink: 0;
+    }
+
+    .main-area {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .nav-link {
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+    }
+
+    #mobileOverlay {
+      display: none;
+    }
+
+    #mobileOverlay.show {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    #sidebar {
+      position: relative;
+      z-index: 100;
+    }
+
+    #menuToggle {
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .app-layout {
+        display: block;
+      }
+
+      #sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(280px, 85vw);
+        overflow-y: auto;
+        transform: translateX(-110%);
+        transition: transform 0.25s ease;
+      }
+
+      #sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main-area {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="logo">N</div>
-      <div>
-        <h2>NEEMA HOUSE</h2>
-        <small>PROPERTY MANAGER</small>
+
+  <div id="mobileOverlay"></div>
+
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+
+      <div class="brand">
+        <div class="brand-logo">N</div>
+
+        <div class="brand-text">
+          <h2>NEEMA HOUSE</h2>
+          <p>Property Management</p>
+        </div>
       </div>
-    </div>
-    <div class="nav-label">Management</div>
-    <div class="nav-item">▦ &nbsp; Dashboard</div>
-    <div class="nav-item active">▤ &nbsp; Record Manager</div>
-    <div class="nav-item">▧ &nbsp; Receipts</div>
-    <div class="nav-item">↻ &nbsp; Payment History</div>
-    <div class="nav-item">♙ &nbsp; Tenants</div>
-    <div class="nav-item">⌂ &nbsp; Houses R1–R7</div>
-    <div class="nav-item">! &nbsp; Arrears</div>
-    <div class="nav-item">▥ &nbsp; Reports</div>
-    <div class="nav-label">System</div>
-    <div class="nav-item">⚙ &nbsp; Settings</div>
-  </aside>
 
-  <main class="main">
-    <div class="topbar">
-      <div>
-        <h1>Record Manager</h1>
-        <p>Enter tenant charges and payment details to prepare an official receipt.</p>
+      <nav class="sidebar-nav" aria-label="Main navigation">
+
+        <p class="nav-heading">MAIN MENU</p>
+
+        <button
+          type="button"
+          class="nav-link active"
+          data-page="dashboard"
+        >
+          <span>▦</span> Dashboard
+        </button>
+
+        <button
+          type="button"
+          class="nav-link"
+          data-page="payments"
+        >
+          <span>＋</span> Record Manager
+        </button>
+
+        <button
+          type="button"
+          class="nav-link"
+          data-page="receipts"
+        >
+          <span>▤</span> Receipts
+        </button>
+
+        <button
+          type="button"
+          class="nav-link"
+          data-page="history"
+        >
+          <span>◷</span> Payment History
+        </button>
+
+        <p class="nav-heading">PROPERTY</p>
+
+        <button
+          type="button"
+          class="nav-link"
+          data-page="tenants"
+        >
+          <span>♙</span> Tenants
+        </button>
+
+        <button
+          type="button"
+          class="nav-link"
+          data-page="houses"
+        >
+          <span>⌂</span> Houses
+        </button>
+
+        <button
+          type="button"
+          class="nav-link"
+          data-page="arrears"
+        >
+          <span>◴</span> Arrears
+        </button>
+
+        <p class="nav-heading">ANALYTICS</p>
+
+        <button
+          type="button"
+          class="nav-link"
+          data-page="reports"
+        >
+          <span>▥</span> Reports
+        </button>
+
+        <p class="nav-heading">PREFERENCES</p>
+
+        <button
+          type="button"
+          class="nav-link"
+          data-page="settings"
+        >
+          <span>⚙</span> Settings
+        </button>
+
+      </nav>
+
+      <div class="sidebar-footer">
+        <p>NEEMA HOUSE MANAGER</p>
+        <small>Rental Management System</small>
       </div>
-      <div class="badge">NEEMA HOUSE · NAKURU</div>
-    </div>
 
-    <div class="columns">
-      <section class="card form-card">
-        <h2>New payment record</h2>
-        <p class="card-intro">Complete the fields below. The receipt preview updates automatically.</p>
+    </aside>
 
-        <form id="managerForm">
-          <div class="section-title">1. Tenant and period</div>
-          <div class="grid">
-            <div class="field">
-              <label for="tenant">Tenant full name *</label>
-              <input id="tenant" required placeholder="e.g. John Kamau">
-            </div>
-            <div class="field">
-              <label for="house">House number *</label>
-              <select id="house">
-                <option>R1</option><option>R2</option><option>R3</option>
-                <option>R4</option><option>R5</option><option>R6</option><option>R7</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="date">Receipt date *</label>
-              <input id="date" type="date" required>
-            </div>
-            <div class="field">
-              <label for="month">Month paid for *</label>
-              <select id="month">
-                <option>January</option><option>February</option><option>March</option>
-                <option>April</option><option>May</option><option>June</option>
-                <option>July</option><option>August</option><option>September</option>
-                <option>October</option><option>November</option><option>December</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="year">Year *</label>
-              <input id="year" type="number" min="2020" max="2100" required>
-            </div>
-            <div class="field">
-              <label for="receivedBy">Received by *</label>
-              <input id="receivedBy" required placeholder="Name of receiver">
-            </div>
+    <!-- MAIN CONTENT -->
+    <main class="main-area">
+
+      <!-- TOP BAR -->
+      <header class="topbar">
+
+        <div class="topbar-left">
+
+          <button
+            type="button"
+            id="menuToggle"
+            class="menu-toggle"
+            aria-label="Toggle navigation menu"
+            aria-controls="sidebar"
+            aria-expanded="false"
+          >
+            ☰
+          </button>
+
+          <div class="breadcrumb">
+            <p>Neema House / <span id="pageBreadcrumb">Dashboard</span></p>
+            <h1 id="pageTitle">Dashboard</h1>
+            <p id="pageDescription">
+              Welcome to your rental management workspace.
+            </p>
           </div>
 
-          <div class="section-title">2. Charges</div>
-          <div class="grid">
-            <div class="field">
-              <label for="rent">Rent (KSh)</label>
-              <input id="rent" type="number" min="0" step="1" value="7000" required>
-              <div class="help">R1–R5: KSh 7,000. R6–R7: KSh 5,000.</div>
-            </div>
-            <div class="field">
-              <label for="units">Water units</label>
-              <input id="units" type="number" min="0" step="1" value="0">
-              <div class="help">Charged at KSh 100 per unit.</div>
-            </div>
-            <div class="field">
-              <label for="rate">Water rate per unit (KSh)</label>
-              <input id="rate" type="number" min="0" step="1" value="100">
-            </div>
-            <div class="field">
-              <label for="garbage">Garbage charge (KSh)</label>
-              <input id="garbage" type="number" min="0" step="1" value="0">
-            </div>
-            <div class="field">
-              <label for="wifi">Wi-Fi charge (KSh)</label>
-              <input id="wifi" type="number" min="0" step="1" value="0">
-            </div>
-            <div class="field">
-              <label for="previous">Previous balance (KSh)</label>
-              <input id="previous" type="number" min="0" step="1" value="0">
-            </div>
-          </div>
+        </div>
 
-          <div class="section-title">3. Payment details</div>
-          <div class="grid">
-            <div class="field">
-              <label for="amount">Amount received (KSh) *</label>
-              <input id="amount" type="number" min="0" step="1" value="0" required>
-            </div>
-            <div class="field">
-              <label for="method">Payment method *</label>
-              <select id="method"><option>Cash</option><option>M-Pesa</option></select>
-            </div>
-            <div class="field full">
-              <label for="reference">M-Pesa reference code</label>
-              <input id="reference" placeholder="Required when paying by M-Pesa">
-            </div>
-            <div class="field">
-              <label for="token">Electricity token number</label>
-              <input id="token" placeholder="Optional">
-            </div>
-            <div class="field">
-              <label for="tokenCost">Electricity token cost (KSh)</label>
-              <input id="tokenCost" type="number" min="0" step="1" value="0">
-              <div class="help">Recorded separately, excluded from account charges.</div>
-            </div>
-            <div class="field full">
-              <label for="notes">Notes (optional)</label>
-              <textarea id="notes" rows="2" placeholder="Any additional details"></textarea>
-            </div>
+        <div class="topbar-right">
+          <div class="date-display">
+            <span>Today</span>
+            <strong id="today"></strong>
           </div>
+          <div class="user-avatar" aria-label="Property manager">N</div>
+        </div>
 
-          <div class="actions">
-            <button class="primary" type="submit">Update Receipt</button>
-            <button class="dark" type="button" id="savePng">Save Receipt as PNG</button>
-            <button class="light" type="button" id="print">Print Receipt</button>
-          </div>
-          <div id="status" class="status" role="status"></div>
-        </form>
+      </header>
+
+      <!-- JAVASCRIPT RENDERS EACH PAGE HERE -->
+      <section
+        id="pageContent"
+        class="page-content"
+        aria-live="polite"
+      >
+        <div class="loading-state">
+          <p>Loading Neema House Manager...</p>
+        </div>
       </section>
 
-      <section class="card receipt-card">
-        <h2>Receipt preview</h2>
-        <p class="card-intro">Only the receipt below will be included in the downloaded image.</p>
-
-        <div class="summary">
-          <div class="summary-item">
-            <span>Total account charges</span>
-            <strong id="sumCharges">KSh 7,000</strong>
-          </div>
-          <div class="summary-item">
-            <span>Amount received</span>
-            <strong id="sumPaid">KSh 0</strong>
-          </div>
-          <div class="summary-item balance">
-            <span>Outstanding balance</span>
-            <strong id="sumBalance">KSh 7,000</strong>
-          </div>
-          <div class="summary-item">
-            <span>Advance credit</span>
-            <strong id="sumCredit">KSh 0</strong>
-          </div>
-        </div>
-
-        <div class="receipt" id="receipt">
-          <div class="receipt-header">
-            <div class="receipt-logo">N</div>
-            <h2>NEEMA HOUSE</h2>
-            <p>P.O. Box 20104, NAKURU</p>
-            <p>TEL: 0722965523</p>
-            <div class="receipt-heading">OFFICIAL PAYMENT RECEIPT</div>
-            <p><strong>Receipt No. <span id="oNumber">0001</span></strong></p>
-          </div>
-
-          <div class="receipt-section">
-            <h3>1. Tenant Details</h3>
-            <div class="receipt-row"><span>Tenant Name</span><span id="oTenant">—</span></div>
-            <div class="receipt-row"><span>House Number</span><span id="oHouse">R1</span></div>
-            <div class="receipt-row"><span>Receipt Date</span><span id="oDate">—</span></div>
-            <div class="receipt-row"><span>Month/Year Paid For</span><span id="oPeriod">—</span></div>
-          </div>
-
-          <div class="receipt-section">
-            <h3>2. Charges</h3>
-            <div class="receipt-row"><span>Rent</span><span id="oRent">KSh 7,000</span></div>
-            <div class="receipt-row"><span id="oWaterLabel">Water: 0 units × KSh 100</span><span id="oWater">KSh 0</span></div>
-            <div class="receipt-row"><span>Garbage</span><span id="oGarbage">KSh 0</span></div>
-            <div class="receipt-row"><span>Wi-Fi</span><span id="oWifi">KSh 0</span></div>
-            <div class="receipt-row"><span>Electricity token</span><span>No account charge</span></div>
-            <div class="receipt-row total"><span>Total Charges</span><span id="oTotal">KSh 7,000</span></div>
-          </div>
-
-          <div class="receipt-section">
-            <h3>3. Payment Details</h3>
-            <div class="receipt-row"><span>Amount Received</span><span id="oAmount">KSh 0</span></div>
-            <div class="receipt-row"><span>Payment Method</span><span id="oMethod">Cash</span></div>
-            <div class="receipt-row"><span>M-Pesa Reference Code</span><span id="oReference">—</span></div>
-            <div class="receipt-row"><span>Electricity Token Number</span><span id="oToken">—</span></div>
-            <div class="receipt-row"><span>Token Cost (separate)</span><span id="oTokenCost">KSh 0</span></div>
-            <div class="receipt-row"><span>Received by</span><span id="oReceivedBy">—</span></div>
-          </div>
-
-          <div class="receipt-section">
-            <h3>4. Account Balance</h3>
-            <div class="receipt-row"><span>Previous Balance</span><span id="oPrevious">KSh 0</span></div>
-            <div class="receipt-row"><span>New Charges This Period</span><span id="oNewCharges">KSh 7,000</span></div>
-            <div class="receipt-row highlight"><span>New Outstanding Balance</span><span id="oBalance">KSh 7,000</span></div>
-            <div class="receipt-row highlight"><span>Advance Credit</span><span id="oCredit">KSh 0</span></div>
-            <div class="receipt-row"><span>Notes</span><span id="oNotes">—</span></div>
-          </div>
-
-          <div class="due">All payable by 5th of every month.</div>
-          <div class="signatures">
-            <div>Received by: __________________</div>
-            <div>Signature: _____________________</div>
-          </div>
-        </div>
-
-        <p class="footer-note">
-          Note: This prototype previews and exports receipts. It does not yet save payment records permanently, verify unique M-Pesa codes, or automatically allocate payments across older unpaid charges. Do not rely on this page as the only record of real transactions.
+      <!-- FOOTER -->
+      <footer class="main-footer">
+        <p>
+          &copy; <span id="currentYear"></span>
+          Neema House Manager
         </p>
-      </section>
-    </div>
-  </main>
-</div>
+        <p>Manage your property with confidence.</p>
+      </footer>
 
-<script>
-const $ = id => document.getElementById(id);
-const fields = ["tenant","house","date","month","year","receivedBy","rent","units","rate","garbage","wifi","previous","amount","method","reference","token","tokenCost","notes"];
+    </main>
 
-function cash(value) {
-  return "KSh " + Math.round(Number(value) || 0).toLocaleString("en-KE");
-}
-function put(id, value) {
-  $(id).textContent = value === "" || value == null ? "—" : value;
-}
-function dateText(value) {
-  if (!value) return "—";
-  const p = value.split("-");
-  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : value;
-}
-function update() {
-  const rent = Number($("rent").value) || 0;
-  const units = Number($("units").value) || 0;
-  const rate = Number($("rate").value) || 0;
-  const water = units * rate;
-  const garbage = Number($("garbage").value) || 0;
-  const wifi = Number($("wifi").value) || 0;
-  const previous = Number($("previous").value) || 0;
-  const paid = Number($("amount").value) || 0;
-  const tokenCost = Number($("tokenCost").value) || 0;
+  </div>
 
-  const charges = rent + water + garbage + wifi;
-  const totalDue = previous + charges;
-  const balance = Math.max(0, totalDue - paid);
-  const credit = Math.max(0, paid - totalDue);
+  <script>
+    document.getElementById("currentYear").textContent =
+      new Date().getFullYear();
 
-  put("oTenant", $("tenant").value.trim());
-  put("oHouse", $("house").value);
-  put("oDate", dateText($("date").value));
-  put("oPeriod", `${$("month").value} ${$("year").value}`);
-  put("oRent", cash(rent));
-  put("oWaterLabel", `Water: ${units} units × ${cash(rate)}`);
-  put("oWater", cash(water));
-  put("oGarbage", cash(garbage));
-  put("oWifi", cash(wifi));
-  put("oTotal", cash(charges));
-  put("oAmount", cash(paid));
-  put("oMethod", $("method").value);
-  put("oReference", $("reference").value.trim());
-  put("oToken", $("token").value.trim());
-  put("oTokenCost", cash(tokenCost));
-  put("oReceivedBy", $("receivedBy").value.trim());
-  put("oPrevious", cash(previous));
-  put("oNewCharges", cash(charges));
-  put("oBalance", cash(balance));
-  put("oCredit", cash(credit));
-  put("oNotes", $("notes").value.trim());
+    const menuToggle = document.getElementById("menuToggle");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("mobileOverlay");
 
-  $("sumCharges").textContent = cash(charges);
-  $("sumPaid").textContent = cash(paid);
-  $("sumBalance").textContent = cash(balance);
-  $("sumCredit").textContent = cash(credit);
-}
+    function closeMenu() {
+      sidebar.classList.remove("open");
+      overlay.classList.remove("show");
+      menuToggle.setAttribute("aria-expanded", "false");
+    }
 
-function updateRent() {
-  $("rent").value = ["R1","R2","R3","R4","R5"].includes($("house").value) ? 7000 : 5000;
-  update();
-}
+    menuToggle.addEventListener("click", function () {
+      const isOpen = sidebar.classList.toggle("open");
 
-const now = new Date();
-$("date").value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-$("month").selectedIndex = now.getMonth();
-$("year").value = now.getFullYear();
-updateRent();
-
-$("house").addEventListener("change", updateRent);
-fields.forEach(id => {
-  $(id).addEventListener("input", update);
-  $(id).addEventListener("change", update);
-});
-
-$("managerForm").addEventListener("submit", event => {
-  event.preventDefault();
-  if ($("method").value === "M-Pesa" && !$("reference").value.trim()) {
-    $("status").textContent = "Enter the M-Pesa reference code for this payment.";
-    $("reference").focus();
-    return;
-  }
-  update();
-  $("status").textContent = "Receipt preview updated.";
-});
-
-$("savePng").addEventListener("click", async () => {
-  if (!$("tenant").value.trim() || !$("receivedBy").value.trim()) {
-    $("status").textContent = "Fill in the tenant name and received-by field first.";
-    return;
-  }
-  if ($("method").value === "M-Pesa" && !$("reference").value.trim()) {
-    $("status").textContent = "Enter the M-Pesa reference code first.";
-    $("reference").focus();
-    return;
-  }
-  if (typeof html2canvas !== "function") {
-    $("status").textContent = "Image tool did not load. Check your internet connection and reload.";
-    return;
-  }
-
-  const button = $("savePng");
-  button.disabled = true;
-  $("status").textContent = "Preparing receipt image…";
-  update();
-
-  try {
-    const canvas = await html2canvas($("receipt"), {
-      scale: 3,
-      backgroundColor: "#ffffff",
-      logging: false
+      overlay.classList.toggle("show", isOpen);
+      menuToggle.setAttribute("aria-expanded", String(isOpen));
     });
-    const link = document.createElement("a");
-    link.download = `Neema-House-Receipt-${$("oNumber").textContent}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-    $("status").textContent = "Receipt PNG downloaded.";
-  } catch (error) {
-    console.error(error);
-    $("status").textContent = "Could not save the image. Reload and try again.";
-  } finally {
-    button.disabled = false;
-  }
-});
 
-$("print").addEventListener("click", () => {
-  update();
-  window.print();
-});
+    overlay.addEventListener("click", closeMenu);
 
-update();
-</script>
+    document.querySelectorAll(".nav-link").forEach(function (link) {
+      link.addEventListener("click", closeMenu);
+    });
+  </script>
+
+  <!-- Your existing JavaScript and localStorage logic -->
+  <script type="module" src="script.js"></script>
+
 </body>
 </html>
